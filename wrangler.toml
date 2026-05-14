@@ -1,0 +1,40 @@
+name = "leave-status-admin"
+main = "src/worker.js"
+compatibility_date = "2026-04-20"
+workers_dev = false
+
+kv_namespaces = [
+  { binding = "LEAVE_STATUS_DATA", id = "REPLACE_WITH_KV_NAMESPACE_ID", preview_id = "REPLACE_WITH_KV_PREVIEW_NAMESPACE_ID" }
+]
+
+routes = [
+  { pattern = "example.com/login*", zone_name = "example.com" },
+  { pattern = "*.example.com/*", zone_name = "example.com" },
+  { pattern = "app.example.com", custom_domain = true }
+]
+
+[vars]
+SUPER_ADMIN_EMAIL = "admin@example.com"
+CF_ACCOUNT_ID = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+CF_ACCESS_TEAM_DOMAIN = "your-team.cloudflareaccess.com"
+CF_ACCESS_AUD = "REPLACE_WITH_SUPER_ACCESS_AUD"
+CF_ACCESS_ADMIN_APP_ID = "REPLACE_WITH_ACCESS_APPLICATION_ID"
+CF_ACCESS_ADMIN_POLICY_ID = "REPLACE_WITH_ACCESS_POLICY_ID"
+CF_ACCESS_ADMIN_AUD = "REPLACE_WITH_ADMIN_ACCESS_AUD"
+ADMIN_EMAIL_REPLACEMENTS_JSON = "{}"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
+html_handling = "none"
+
+[[r2_buckets]]
+binding = "LEAVE_ATTACHMENTS"
+bucket_name = "leave-status-attachments"
+
+[[d1_databases]]
+binding = "LEAVE_STATUS_D1"
+database_name = "leave-status-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"

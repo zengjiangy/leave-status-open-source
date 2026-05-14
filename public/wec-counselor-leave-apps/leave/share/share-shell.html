@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>请假</title>
+    <meta name="description" content="请假页面">
+    <link rel="stylesheet" href="style.css?v=20260508-status-icon">
+</head>
+<body>
+    <div class="page-loading active" id="pageLoading" aria-live="polite">
+        <div class="page-loading__card" role="status" aria-label="&#21152;&#36733;&#20013;">
+            <span class="page-loading__spinner" aria-hidden="true">
+                <i></i><i></i><i></i><i></i><i></i><i></i>
+                <i></i><i></i><i></i><i></i><i></i><i></i>
+            </span>
+            <span class="page-loading__text">&#21152;&#36733;&#20013;...</span>
+        </div>
+    </div>
+    <div id="app" class="app-pending">
+        <div class="page-share">
+            <div class="page-scroll">
+                <section class="cat-status-flag no-shrink">
+                    <div class="flag-dom relative" id="flagDom">
+                        <button class="personal-info absolute" id="personalInfoBtn" type="button" onclick="showPersonalInfoModal()">个人信息 &gt;</button>
+                        <div class="flag-text">
+                            <div class="status-svg-text">
+                                <svg class="svg-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                    <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" transform="translate(0 813) scale(1 -1)" d="M499 813Q381 813 279 753Q181 695 123 597Q63 495 63 377Q63 259 123 158Q181 59 279 2Q381 -58 499 -58Q617 -58 718 2Q817 59 874 158Q934 259 934 377Q934 495 875 597Q817 695 718 753Q617 813 499 813ZM740 440 498 208Q482 193 460.5 193Q439 193 422 207L258 364Q248 373 244.5 386Q241 399 244.5 411.5Q248 424 258 433.5Q268 443 281.5 447Q295 451 308.5 447.5Q322 444 332 434L460 311 667 509Q683 524 703.5 524Q724 524 739 509.5Q754 495 754 474.5Q754 454 740 440Z"></path>
+                                </svg>
+                                <span id="statusSubText"></span>
+                            </div>
+                            <div class="status-text-bold" id="statusText"></div>
+                        </div>
+                        <div class="dynamic-strip no-shrink">
+                            <div class="now-time" id="currentTime"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="cat-status-show bg-white no-shrink">
+                    <div class="status-show-share bg-white px-20 flex ai-center py-10">
+                        <div class="short-name radius-circle bg-primary font-white font-14 no-shrink mr-10 text-center" id="avatarBadge">
+                            <span id="userAvatar"></span>
+                        </div>
+                        <div class="flex-1 font-14">
+                            <div class="font-dark" id="userName"></div>
+                            <div class="font-normal" id="userId"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="cat-flow-leave-meta hairline-b py-10 font-12 bg-white px-20 no-shrink">
+                    <div class="flex">
+                        <div class="flex mb-5 flex-1 meta-item">
+                            <div class="font-light no-shrink row-label">请假类型：</div>
+                            <div class="font-normal flex-1 mr-5" id="leaveType"></div>
+                        </div>
+                        <div class="flex mb-5 flex-1 meta-item">
+                            <div class="font-light no-shrink row-label">需要离校：</div>
+                            <div class="flex-1 mr-5"><span class="font-normal" id="needLeaveSchool"></span></div>
+                        </div>
+                    </div>
+                    <div class="flex mb-5">
+                        <div class="font-light no-shrink row-label">销假规则：</div>
+                        <div class="font-normal flex-1 mr-5">
+                            <span class="font-warning" id="cancelRuleText"></span>
+                            <button class="inline-link font-primary" id="cancelRuleLink" type="button" onclick="showCancelRuleModal()">查看 &gt;</button>
+                        </div>
+                    </div>
+                    <div class="flex">
+                        <div class="font-light no-shrink row-label">实际休假时间：</div>
+                        <div class="font-normal flex-1 mr-5"><span id="actualVacationTime"></span></div>
+                    </div>
+                </section>
+
+                <section class="cat-leave-detail hairline-b hairline-t px-20 bg-white py-10 my-10" flow-biz="true">
+                    <div class="approved-stamp" id="approvedStamp">
+                        <img src="stamp.png" alt="审批通过" class="stamp-img">
+                    </div>
+
+                    <div class="font-dark font-14 mb-10 application-title">我的 请假申请</div>
+
+                    <div class="flex mb-5 font-12 ai-center relative">
+                        <div class="totalDays pin-t pin-r absolute font-14 bold px-10 py-5 font-primary radius-small" id="durationBadge"></div>
+                        <div class="font-light no-shrink detail-label">开始时间：</div>
+                        <div class="font-normal flex-1 ml-5 bold" id="startTime"></div>
+                    </div>
+                    <div class="flex mb-5 font-12 ai-center">
+                        <div class="font-light no-shrink detail-label">结束时间：</div>
+                        <div class="font-normal flex-1 ml-5 bold" id="endTime"></div>
+                    </div>
+                    <div class="flex mb-5 font-12 ai-center">
+                        <div class="font-light no-shrink detail-label">审批流程：</div>
+                        <div class="font-normal flex-1 ml-5" id="approvalFlow"></div>
+                    </div>
+                    <div class="flex mb-5 font-12 ai-start" id="emergencyContactRow" hidden>
+                        <div class="font-light no-shrink detail-label">紧急联系人：</div>
+                        <div class="font-normal flex-1 ml-5 break-all" id="emergencyContact"></div>
+                    </div>
+                    <div class="flex mb-5 font-12 ai-start">
+                        <div class="font-light no-shrink detail-label">审批人：</div>
+                        <div class="font-normal flex-1 ml-5 break-all" id="approver"></div>
+                    </div>
+                    <div class="flex mb-5 font-12 ai-start">
+                        <div class="font-light no-shrink detail-label">请假原因：</div>
+                        <div class="font-normal flex-1 ml-5 break-all" id="leaveReason"></div>
+                    </div>
+                    <div class="flex mb-5 font-12 ai-center">
+                        <div class="font-light no-shrink detail-label">发起位置：</div>
+                        <div class="font-normal flex-1 ml-5">
+                            <a class="location-link" id="locationLink" href="#" target="_blank" rel="noreferrer"></a>
+                        </div>
+                    </div>
+                    <div class="flex mb-5 font-12 ai-center">
+                        <div class="font-light no-shrink detail-label">抄送人：</div>
+                        <div class="font-normal flex-1 ml-5"><span id="ccPerson"></span></div>
+                    </div>
+                    <div class="flex mb-5 font-12 ai-start" id="destinationRow" hidden>
+                        <div class="font-light no-shrink detail-label">目的地：</div>
+                        <div class="font-normal flex-1 ml-5 break-all" id="destinationText"></div>
+                    </div>
+                    <div class="flex mb-5 font-12 ai-start">
+                        <div class="font-light no-shrink detail-label">宿舍信息：</div>
+                        <div class="font-normal flex-1 ml-5 break-all" id="dormInfo"></div>
+                    </div>
+                    <div class="flex mb-5 font-12 ai-start" id="attachmentRow">
+                        <div class="font-light no-shrink detail-label">附件：</div>
+                        <div class="font-normal flex-1 ml-5 flex-col">
+                            <div class="attachment-preview flex flex-wrap" id="attachmentPreview"></div>
+                        </div>
+                    </div>
+                    <div class="flex mb-5 font-12 ai-center font-warning text-justify break-all" id="disclaimerText"></div>
+                </section>
+
+                <section class="cat-complete-info bg-white px-20 py-10 mb-10 hairline-b hairline-t" id="completionInfoSection" hidden>
+                    <div class="font-dark font-14 mb-10"><span>销假信息</span></div>
+                    <div class="flex font-12 mb-5">
+                        <div class="font-light no-shrink complete-label">销假状态：</div>
+                        <div class="flex flex-1 ml-5 font-primary completion-status-row">
+                            <span class="font-success" id="completionStatusText"></span>
+                            <button class="completion-inline-link font-primary" id="completionActionButton" type="button" onclick="showCompletionFlowModal()" hidden></button>
+                            <a class="completion-inline-link font-primary" id="completionActionLink" href="#" target="_blank" rel="noreferrer"></a>
+                            <span class="completion-inline-link font-primary" id="completionActionText"></span>
+                        </div>
+                    </div>
+                    <div class="flex font-12 mb-5" id="completionAttachmentRow">
+                        <div class="font-light no-shrink complete-label">附件：</div>
+                        <div class="flex-1 ml-5 flex-col">
+                            <div class="attachment-preview completion-attachment-preview flex flex-wrap" id="completionAttachmentPreview"></div>
+                        </div>
+                    </div>
+                    <div class="flex font-12 mb-5 mt-10" id="completionLocationRow">
+                        <div class="font-light no-shrink complete-label">所在位置：</div>
+                        <div class="flex flex-1 ml-5">
+                            <a class="location-link font-primary" id="completionLocationLink" href="#" target="_blank" rel="noreferrer"></a>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <a class="boyaSevice" id="serviceBtn" href="#" target="_blank" rel="noreferrer" aria-label="智能客服">
+                <img class="service-icon" src="service-headset.png" alt="">
+                <span class="service-copy">智能客服</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="cancelRuleModal" onclick="hideCancelRuleModal(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-title">销假规则说明</div>
+            <div class="modal-body">
+                <p>· 开启时间：<span id="ruleStartTime"></span></p>
+                <p>· 操作人：<span id="ruleOperator"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn" type="button" onclick="hideCancelRuleModal()">知道了</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay cat-personal-modal" id="personalInfoModal" onclick="hidePersonalInfoModal(event)">
+        <div class="personal-info-box px-15 py-15 radius-normal overflow-hidden" onclick="event.stopPropagation()">
+            <div class="info-box-title font-16 font-normal text-center pb-15 relative">
+                <span class="font-bold">个人信息</span>
+                <button class="close-icon" type="button" onclick="hidePersonalInfoModal()" aria-label="关闭">✕</button>
+            </div>
+            <div class="info-box-content overflow-y-auto">
+                <div class="row-wrap">
+                    <div class="box-content-row font-14 font-normal font-bold flex mb-10 ai-start">
+                        <div class="content-row-label mr-5 no-shrink">• 照片：</div>
+                        <div class="content-row-value flex-1" id="piPhoto"></div>
+                    </div>
+                    <div class="box-content-row font-14 font-normal font-bold flex mb-10 ai-start">
+                        <div class="content-row-label mr-5 no-shrink">• 姓名：</div>
+                        <div class="content-row-value flex-1" id="piName"></div>
+                    </div>
+                    <div class="box-content-row font-14 font-normal font-bold flex mb-10 ai-start">
+                        <div class="content-row-label mr-5 no-shrink">• 学号：</div>
+                        <div class="content-row-value flex-1" id="piStudentId"></div>
+                    </div>
+                    <div class="box-content-row font-14 font-normal font-bold flex mb-10 ai-start">
+                        <div class="content-row-label mr-5 no-shrink">• 性别：</div>
+                        <div class="content-row-value flex-1" id="piGender"></div>
+                    </div>
+                    <div class="box-content-row font-14 font-normal font-bold flex mb-10 ai-start">
+                        <div class="content-row-label mr-5 no-shrink">• 年级：</div>
+                        <div class="content-row-value flex-1" id="piGrade"></div>
+                    </div>
+                    <div class="box-content-row font-14 font-normal font-bold flex mb-10 ai-start">
+                        <div class="content-row-label mr-5 no-shrink">• 学院：</div>
+                        <div class="content-row-value flex-1" id="piCollege"></div>
+                    </div>
+                    <div class="box-content-row font-14 font-normal font-bold flex mb-10 ai-start">
+                        <div class="content-row-label mr-5 no-shrink">• 专业：</div>
+                        <div class="content-row-value flex-1" id="piMajor"></div>
+                    </div>
+                    <div class="box-content-row font-14 font-normal font-bold flex mb-10 ai-start">
+                        <div class="content-row-label mr-5 no-shrink">• 班级：</div>
+                        <div class="content-row-value flex-1" id="piClassName"></div>
+                    </div>
+                    <div class="box-content-row font-14 font-normal font-bold flex ai-start">
+                        <div class="content-row-label mr-5 no-shrink">• 宿舍：</div>
+                        <div class="content-row-value flex-1" id="piDorm"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay completion-flow-modal" id="completionFlowModal" onclick="hideCompletionFlowModal(event)">
+        <div class="completion-flow-card" onclick="event.stopPropagation()">
+            <div class="completion-flow-title" id="completionFlowTitle">销假审批流程</div>
+            <div class="completion-flow-body" id="completionFlowBody"></div>
+            <div class="completion-flow-footer">
+                <button class="completion-flow-btn" type="button" id="completionFlowConfirmBtn" onclick="hideCompletionFlowModal()">知道了</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="app.js?v=20260511-need-leave-color"></script>
+</body>
+</html>
