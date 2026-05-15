@@ -18,6 +18,48 @@ const BEIJING_TIME_FORMATTER = new Intl.DateTimeFormat("zh-CN", {
     second: "2-digit",
     hour12: false
 });
+const CUSTOM_TEXT_COLOR_TARGETS = {
+    statusSubText: ["statusSubText"],
+    userAvatarText: ["userAvatar"],
+    userName: ["userName"],
+    userId: ["userId"],
+    leaveType: ["leaveType"],
+    needLeaveSchool: ["needLeaveSchool"],
+    cancelRuleText: ["cancelRuleText"],
+    actualVacationTime: ["actualVacationTime"],
+    startTime: ["startTime"],
+    endTime: ["endTime"],
+    durationText: ["durationBadge"],
+    approvalFlow: ["approvalFlow"],
+    emergencyContact: ["emergencyContact"],
+    approver: ["approver"],
+    leaveReason: ["leaveReason"],
+    locationText: ["locationLink"],
+    ccPerson: ["ccPerson"],
+    "destination.detail": ["destinationText"],
+    dormInfo: ["dormInfo"],
+    disclaimerText: ["disclaimerText"],
+    "completionInfo.statusText": ["completionStatusText"],
+    "completionInfo.statusActionText": [
+        "completionActionButton",
+        "completionActionLink",
+        "completionActionText"
+    ],
+    "completionInfo.locationText": ["completionLocationLink"],
+    "completionInfo.approvalFlow.title": ["completionFlowTitle"],
+    "completionInfo.approvalFlow.confirmText": ["completionFlowConfirmBtn"],
+    "cancelRule.startTime": ["ruleStartTime"],
+    "cancelRule.operator": ["ruleOperator"],
+    "personalInfo.photo": ["piPhoto"],
+    "personalInfo.name": ["piName"],
+    "personalInfo.studentId": ["piStudentId"],
+    "personalInfo.gender": ["piGender"],
+    "personalInfo.grade": ["piGrade"],
+    "personalInfo.college": ["piCollege"],
+    "personalInfo.major": ["piMajor"],
+    "personalInfo.className": ["piClassName"],
+    "personalInfo.dorm": ["piDorm"]
+};
 
 let pageLoadingShownAt = 0;
 let activeConfig = null;
@@ -137,6 +179,7 @@ function renderPage(config) {
 
     completionInfoRenderSignature = "";
     applyCompletionInfo(config);
+    applyCustomTextColors(config);
     revealApp();
 }
 
@@ -229,6 +272,38 @@ function isOptionalVisible(config, key) {
     }
 
     return Boolean(config.visibleFields && config.visibleFields[key]);
+}
+
+function applyCustomTextColors(config) {
+    if (!config?.textColorModeEnabled || !config.textColors || typeof config.textColors !== "object") {
+        return;
+    }
+
+    Object.entries(CUSTOM_TEXT_COLOR_TARGETS).forEach(([path, ids]) => {
+        const color = getCustomTextColor(config, path);
+        if (!color) {
+            return;
+        }
+
+        ids.forEach((id) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.style.color = color;
+            }
+        });
+    });
+
+    document.querySelectorAll("[data-text-color-path]").forEach((element) => {
+        const color = getCustomTextColor(config, element.dataset.textColorPath || "");
+        if (color) {
+            element.style.color = color;
+        }
+    });
+}
+
+function getCustomTextColor(config, path) {
+    const color = String(config?.textColors?.[path] || "").trim();
+    return /^#[0-9a-f]{6}$/i.test(color) ? color : "";
 }
 
 function formatDestinationText(destination) {
@@ -506,16 +581,21 @@ function applyCompletionInfo(config) {
     applyLocationLink(completionLocationLink, completionLocationText, completionLocationUrl);
     completionLocationRow.hidden =
         !completionLocationText || !completionLocationVisible;
+
+    applyCustomTextColors(config);
 }
 
 function getCompletionApprovalSteps(approvalFlow) {
     const flow = approvalFlow && typeof approvalFlow === "object" ? approvalFlow : {};
-    return [flow.firstStep, flow.secondStep]
-        .map((step, index) => normalizeCompletionApprovalStep(step, index === 0 ? "primary" : "success"))
+    return [
+        { value: flow.firstStep, fallbackTheme: "primary", colorPath: "completionInfo.approvalFlow.firstStep" },
+        { value: flow.secondStep, fallbackTheme: "success", colorPath: "completionInfo.approvalFlow.secondStep" }
+    ]
+        .map((step) => normalizeCompletionApprovalStep(step.value, step.fallbackTheme, step.colorPath))
         .filter((step) => step.actor || step.timeText);
 }
 
-function normalizeCompletionApprovalStep(step, fallbackTheme) {
+function normalizeCompletionApprovalStep(step, fallbackTheme, colorPath) {
     const value = step && typeof step === "object" ? step : {};
     const theme = typeof value.theme === "string" ? value.theme.trim().toLowerCase() : "";
     return {
@@ -523,7 +603,8 @@ function normalizeCompletionApprovalStep(step, fallbackTheme) {
         actionText: typeof value.actionText === "string" ? value.actionText.trim() : "",
         timeText: typeof value.timeText === "string" ? value.timeText.trim() : "",
         opinion: typeof value.opinion === "string" ? value.opinion.trim() : "",
-        theme: ["primary", "success", "warning", "error", "grey"].includes(theme) ? theme : fallbackTheme
+        theme: ["primary", "success", "warning", "error", "grey"].includes(theme) ? theme : fallbackTheme,
+        colorPath
     };
 }
 
@@ -552,11 +633,11 @@ function renderCompletionFlowModal(approvalFlow) {
                     <div class="completion-flow-step__row">
                         <span class="completion-flow-step__dot completion-flow-step__dot--${escapeHtml(step.theme)}"></span>
                         <div class="completion-flow-step__main">
-                            <span class="completion-flow-step__actor">${escapeHtml(step.actor)}</span>${step.actor && step.actionText ? '<span class="completion-flow-step__separator"> - </span>' : ""}<span class="completion-flow-step__status completion-flow-step__status--${escapeHtml(step.theme)}">${escapeHtml(step.actionText)}</span>
+                            <span class="completion-flow-step__actor" data-text-color-path="${escapeHtml(step.colorPath)}.actor">${escapeHtml(step.actor)}</span>${step.actor && step.actionText ? '<span class="completion-flow-step__separator"> - </span>' : ""}<span class="completion-flow-step__status completion-flow-step__status--${escapeHtml(step.theme)}" data-text-color-path="${escapeHtml(step.colorPath)}.actionText">${escapeHtml(step.actionText)}</span>
                         </div>
-                        <span class="completion-flow-step__time">${escapeHtml(step.timeText)}</span>
+                        <span class="completion-flow-step__time" data-text-color-path="${escapeHtml(step.colorPath)}.timeText">${escapeHtml(step.timeText)}</span>
                     </div>
-                    ${step.opinion ? `<div class="completion-flow-step__opinion">审批意见：${escapeHtml(step.opinion)}</div>` : ""}
+                    ${step.opinion ? `<div class="completion-flow-step__opinion" data-text-color-path="${escapeHtml(step.colorPath)}.opinion">审批意见：${escapeHtml(step.opinion)}</div>` : ""}
                 </div>
             `;
         })

@@ -7,6 +7,8 @@ export function normalizeConfig(input) {
   merged.attachments = normalizeAttachmentUrls(merged.attachments);
   merged.optionalVisibilityEnabled = Boolean(merged.optionalVisibilityEnabled);
   merged.visibleFields = normalizeVisibleFields(merged.visibleFields);
+  merged.textColorModeEnabled = Boolean(merged.textColorModeEnabled);
+  merged.textColors = normalizeTextColors(merged.textColors);
   merged.needLeaveSchoolUseCancelRuleColor = Boolean(merged.needLeaveSchoolUseCancelRuleColor);
   merged.showApprovedStamp = Boolean(merged.showApprovedStamp);
   merged.showEmergencyContact = Boolean(merged.showEmergencyContact);
@@ -73,6 +75,18 @@ export function normalizeVisibleFields(input) {
   return result;
 }
 
+export function normalizeTextColors(input) {
+  const source = input && typeof input === "object" ? input : {};
+  const result = {};
+  for (const [key, value] of Object.entries(source)) {
+    const color = normalizeHexColor(value);
+    if (typeof key === "string" && key && color) {
+      result[key] = color;
+    }
+  }
+  return result;
+}
+
 export function normalizeDestination(input) {
   const destination = input && typeof input === "object" ? input : {};
   return {
@@ -94,6 +108,11 @@ export function normalizeCompletionApprovalStep(input) {
     opinion: typeof step.opinion === "string" ? step.opinion.trim() : "",
     theme: ["primary", "success", "warning", "error", "grey"].includes(theme) ? theme : "primary"
   };
+}
+
+function normalizeHexColor(value) {
+  const color = typeof value === "string" ? value.trim() : "";
+  return /^#[0-9a-f]{6}$/i.test(color) ? color.toLowerCase() : "";
 }
 
 export function normalizeAttachmentUrls(input) {

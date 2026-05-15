@@ -55,13 +55,13 @@ export const ADMIN_PAGE_CACHE_CONTROL = "private, max-age=60, must-revalidate";
 export const ADMIN_STATIC_CACHE_CONTROL = "public, max-age=3600, stale-while-revalidate=86400";
 export const SHARE_STATIC_CACHE_CONTROL = "public, max-age=3600, stale-while-revalidate=86400";
 export const LOGIN_PRELOAD_LINK_HEADER =
-  "</login.css?v=20260511-need-leave-color>; rel=preload; as=style, </login.js?v=20260511-need-leave-color>; rel=preload; as=script";
+  "</login.css?v=20260515-theme-swatches>; rel=preload; as=style, </login.js?v=20260515-upload-clean-2>; rel=preload; as=script";
 export const LINK_HISTORY_PRELOAD_LINK_HEADER =
   "</login.css>; rel=preload; as=style, </linkhistory.js>; rel=preload; as=script";
 export const SHARE_PRELOAD_LINK_HEADER =
-  "</wec-counselor-leave-apps/leave/share/style.css?v=20260508-status-icon>; rel=preload; as=style, </wec-counselor-leave-apps/leave/share/config.js>; rel=preload; as=script, </wec-counselor-leave-apps/leave/share/app.js?v=20260511-need-leave-color>; rel=preload; as=script";
+  "</wec-counselor-leave-apps/leave/share/style.css?v=20260515-text-colors>; rel=preload; as=style, </wec-counselor-leave-apps/leave/share/config.js>; rel=preload; as=script, </wec-counselor-leave-apps/leave/share/app.js?v=20260515-text-colors>; rel=preload; as=script";
 export const ROOT_SHARE_PRELOAD_LINK_HEADER =
-  "</style.css?v=20260508-status-icon>; rel=preload; as=style, </config.js>; rel=preload; as=script, </app.js?v=20260511-need-leave-color>; rel=preload; as=script";
+  "</style.css?v=20260515-text-colors>; rel=preload; as=style, </config.js>; rel=preload; as=script, </app.js?v=20260515-text-colors>; rel=preload; as=script";
 export const MIME_TYPE_EXTENSION_MAP = new Map([
   ["image/jpeg", ".jpg"],
   ["image/png", ".png"],

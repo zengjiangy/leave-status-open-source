@@ -14,6 +14,8 @@ const CONFIG = {
     completedStatusEnabled: false,
     completedSwitchAtBeijing: "",
     optionalVisibilityEnabled: false,
+    textColorModeEnabled: false,
+    textColors: {},
     visibleFields: {
         leaveType: true,
         needLeaveSchool: true,

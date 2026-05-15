@@ -1379,10 +1379,14 @@ async function persistArchiveRecord(env, record) {
 }
 
 async function listTrashSummaries(env, url, username) {
-  await migrateDueTrashRecordsForOwner(env, username);
-  const d1Items = await listD1LinkSummaries(env, url, username, "trash");
-  if (d1Items && d1Items.length > 0) {
-    return d1Items;
+  try {
+    await migrateDueTrashRecordsForOwner(env, username);
+    const d1Items = await listD1LinkSummaries(env, url, username, "trash");
+    if (d1Items && d1Items.length > 0) {
+      return d1Items;
+    }
+  } catch (error) {
+    console.error("Failed to list trash records from D1:", error);
   }
 
   return listTrashSummariesFromKV(env, url, username);
@@ -1401,58 +1405,62 @@ async function listTrashSummariesFromKV(env, url, username) {
     });
 
     for (const key of page.keys) {
-      if (!key.name.startsWith(TRASH_KEY_PREFIX)) {
-        continue;
-      }
-
-      const id = key.name.slice(TRASH_KEY_PREFIX.length);
-      const metadata = key.metadata || {};
-      let record = null;
-      const archiveAt = Number(metadata.archiveAt) || getTrashArchiveAt(metadata);
-      if (archiveAt && archiveAt <= now) {
-        record = await readTrashRecord(env, id);
-        if (record) {
-          await moveTrashRecordToArchive(env, record, now);
-        } else {
-          await env.LEAVE_STATUS_DATA.delete(key.name);
-          await deleteD1Link(env, id);
+      try {
+        if (!key.name.startsWith(TRASH_KEY_PREFIX)) {
+          continue;
         }
-        continue;
-      }
 
-      let owner = metadata.createdBy || "";
-      if (!owner || !metadata.userName || !metadata.expiresAt || !metadata.deletedAt) {
-        record = record || (await getTrashRecord(env, id));
-        owner = getRecordOwner(record, env);
-      }
-      if (!adminOwnerMatches(owner, username)) {
-        continue;
-      }
+        const id = key.name.slice(TRASH_KEY_PREFIX.length);
+        const metadata = key.metadata || {};
+        let record = null;
+        const archiveAt = Number(metadata.archiveAt) || getTrashArchiveAt(metadata);
+        if (archiveAt && archiveAt <= now) {
+          record = await readTrashRecord(env, id);
+          if (record) {
+            await moveTrashRecordToArchive(env, record, now);
+          } else {
+            await env.LEAVE_STATUS_DATA.delete(key.name);
+            await deleteD1Link(env, id);
+          }
+          continue;
+        }
 
-      const config = record?.config || {};
-      const expiresAt = Number(metadata.expiresAt) || Number(record?.expiresAt) || 0;
-      const deletedAt = Number(metadata.deletedAt) || Number(record?.deletedAt) || 0;
-      const purgeAt = Number(metadata.purgeAt) || Number(record?.purgeAt) || 0;
-      const resolvedArchiveAt =
-        Number(metadata.archiveAt) || Number(record?.archiveAt) || getTrashArchiveAt(record || metadata);
+        let owner = metadata.createdBy || "";
+        if (!owner || !metadata.userName || !metadata.expiresAt || !metadata.deletedAt) {
+          record = record || (await getTrashRecord(env, id));
+          owner = getRecordOwner(record, env);
+        }
+        if (!adminOwnerMatches(owner, username)) {
+          continue;
+        }
 
-      items.push({
-        id,
-        userName: metadata.userName || config.userName || "",
-        startTime: metadata.startTime || config.startTime || "",
-        endTime: metadata.endTime || config.endTime || "",
-        expiresAt,
-        expiresAtBeijing: expiresAt ? formatBeijingDateTime(expiresAt) : "",
-        deletedAt,
-        deletedAtBeijing: deletedAt ? formatBeijingDateTime(deletedAt) : "",
-        purgeAt,
-        purgeAtBeijing: purgeAt ? formatBeijingDateTime(purgeAt) : "",
-        archiveAt: resolvedArchiveAt,
-        archiveAtBeijing: resolvedArchiveAt ? formatBeijingDateTime(resolvedArchiveAt) : "",
-        url: buildShareUrl(id, {
-          customSubdomain: metadata.customSubdomain || record?.customSubdomain || ""
-        })
-      });
+        const config = record?.config || {};
+        const expiresAt = Number(metadata.expiresAt) || Number(record?.expiresAt) || 0;
+        const deletedAt = Number(metadata.deletedAt) || Number(record?.deletedAt) || 0;
+        const purgeAt = Number(metadata.purgeAt) || Number(record?.purgeAt) || 0;
+        const resolvedArchiveAt =
+          Number(metadata.archiveAt) || Number(record?.archiveAt) || getTrashArchiveAt(record || metadata);
+
+        items.push({
+          id,
+          userName: metadata.userName || config.userName || "",
+          startTime: metadata.startTime || config.startTime || "",
+          endTime: metadata.endTime || config.endTime || "",
+          expiresAt,
+          expiresAtBeijing: expiresAt ? formatBeijingDateTime(expiresAt) : "",
+          deletedAt,
+          deletedAtBeijing: deletedAt ? formatBeijingDateTime(deletedAt) : "",
+          purgeAt,
+          purgeAtBeijing: purgeAt ? formatBeijingDateTime(purgeAt) : "",
+          archiveAt: resolvedArchiveAt,
+          archiveAtBeijing: resolvedArchiveAt ? formatBeijingDateTime(resolvedArchiveAt) : "",
+          url: buildShareUrl(id, {
+            customSubdomain: metadata.customSubdomain || record?.customSubdomain || ""
+          })
+        });
+      } catch (error) {
+        console.error("Failed to process trash list item:", error);
+      }
     }
 
     cursor = page.list_complete ? undefined : page.cursor;

@@ -15,6 +15,63 @@ const OPTIONAL_VISIBLE_FIELDS_FIELD = "visibleFields";
 const SHARE_ROOT_DOMAIN = "example.com";
 const DEFAULT_SHARE_SUBDOMAIN = "app";
 const SHARE_PATH = "/wec-counselor-leave-apps/leave/share/index.html";
+const DEFAULT_CANCEL_RULE_COLOR = "#f4a11a";
+const TEXT_COLOR_MODE_FIELD = "textColorModeEnabled";
+const TEXT_COLOR_FIELD_PREFIX = "textColor:";
+const DEFAULT_TEXT_COLOR = "#657180";
+const TEXT_COLOR_FIELD_DEFAULTS = {
+    statusSubText: "#ffffff",
+    userAvatarText: "#ffffff",
+    userName: "#464c5b",
+    userId: "#657180",
+    leaveType: "#657180",
+    needLeaveSchool: "#657180",
+    cancelRuleText: DEFAULT_CANCEL_RULE_COLOR,
+    actualVacationTime: "#657180",
+    startTime: "#657180",
+    endTime: "#657180",
+    durationText: "#3399ff",
+    approvalFlow: "#657180",
+    emergencyContact: "#657180",
+    approver: "#657180",
+    leaveReason: "#657180",
+    locationText: "#3399ff",
+    ccPerson: "#657180",
+    "destination.detail": "#657180",
+    dormInfo: "#657180",
+    disclaimerText: "#ff9900",
+    "completionInfo.statusText": "#00cc66",
+    "completionInfo.statusActionText": "#3399ff",
+    "completionInfo.locationText": "#3399ff",
+    "completionInfo.approvalFlow.title": "#464c5b",
+    "completionInfo.approvalFlow.confirmText": "#3399ff",
+    "completionInfo.approvalFlow.firstStep.actor": "#657180",
+    "completionInfo.approvalFlow.firstStep.actionText": "#657180",
+    "completionInfo.approvalFlow.firstStep.timeText": "#9ea7b4",
+    "completionInfo.approvalFlow.firstStep.opinion": "#9ea7b4",
+    "completionInfo.approvalFlow.secondStep.actor": "#657180",
+    "completionInfo.approvalFlow.secondStep.actionText": "#00cc66",
+    "completionInfo.approvalFlow.secondStep.timeText": "#9ea7b4",
+    "completionInfo.approvalFlow.secondStep.opinion": "#9ea7b4",
+    "cancelRule.startTime": "#657180",
+    "cancelRule.operator": "#657180",
+    "personalInfo.photo": "#657180",
+    "personalInfo.name": "#657180",
+    "personalInfo.studentId": "#657180",
+    "personalInfo.gender": "#657180",
+    "personalInfo.grade": "#657180",
+    "personalInfo.college": "#657180",
+    "personalInfo.major": "#657180",
+    "personalInfo.className": "#657180",
+    "personalInfo.dorm": "#657180"
+};
+const APPROVAL_THEME_COLORS = {
+    primary: { color: "#3399ff", textColor: "#657180", label: "蓝色" },
+    success: { color: "#00cc66", textColor: "#00cc66", label: "绿色" },
+    warning: { color: "#ff9900", textColor: "#ff9900", label: "橙色" },
+    error: { color: "#ff4400", textColor: "#ff4400", label: "红色" },
+    grey: { color: "#9ea7b4", textColor: "#9ea7b4", label: "灰色" }
+};
 const TIME_WHEEL_FIELDS = {
     upcomingSwitchAtBeijing: { format: "year-minute" },
     completedSwitchAtBeijing: { format: "year-minute" },
@@ -32,6 +89,7 @@ const LINKED_STATUS_TIME_FIELDS = [
     { leaveField: "endTime", statusField: "completedSwitchAtBeijing" }
 ];
 const TIME_WHEEL_SCROLL_DEBOUNCE_MS = 80;
+const VACATION_DURATION_CONFIRM_THRESHOLD_MINUTES = 30 * 24 * 60;
 const OPTIONAL_DISPLAY_FIELDS = [
     { key: "leaveType", path: "leaveType" },
     { key: "needLeaveSchool", path: "needLeaveSchool" },
@@ -61,7 +119,8 @@ const FIELD_GROUPS = [
         title: "显示控制",
         hint: "开启后，符合条件的前端子项目会出现“前端显示”勾选项；取消勾选后保存，前端页面不再显示该项。",
         fields: [
-            { path: "optionalVisibilityEnabled", label: "所有可选模式", type: "checkbox", span: 2 }
+            { path: "optionalVisibilityEnabled", label: "所有可选模式", type: "checkbox", span: 2 },
+            { path: TEXT_COLOR_MODE_FIELD, label: "所有字体选择颜色模式", type: "checkbox", span: 2 }
         ]
     },
     {
@@ -96,7 +155,7 @@ const FIELD_GROUPS = [
                 labelToggle: { path: "needLeaveSchoolUseCancelRuleColor", label: "是否与销假规则文字同色" }
             },
             { path: "cancelRuleText", label: "销假规则", type: "textarea", span: 2 },
-            { path: "cancelRuleColor", label: "销假规则颜色", type: "color" },
+            { path: "cancelRuleColor", label: "销假规则颜色", type: "color", defaultColor: DEFAULT_CANCEL_RULE_COLOR },
             { path: "actualVacationTime", label: "实际休假时间" },
             { path: "startTime", label: "开始时间" },
             { path: "endTime", label: "结束时间" },
@@ -168,7 +227,7 @@ const FIELD_GROUPS = [
             {
                 path: "completionInfo.approvalFlow.firstStep.theme",
                 label: "节点一颜色",
-                type: "select",
+                type: "theme-color",
                 options: [
                     { value: "primary", label: "primary" },
                     { value: "success", label: "success" },
@@ -184,7 +243,7 @@ const FIELD_GROUPS = [
             {
                 path: "completionInfo.approvalFlow.secondStep.theme",
                 label: "节点二颜色",
-                type: "select",
+                type: "theme-color",
                 options: [
                     { value: "success", label: "success" },
                     { value: "primary", label: "primary" },
@@ -231,7 +290,6 @@ const FIELD_GROUPS = [
 const IMAGE_UPLOADERS = {
     leave: {
         title: "请假附件上传",
-        description: "图片会在后台生成压缩预览图，并和高清原图一起上传到 R2。你也可以继续手动粘贴外链。",
         endpoint: ATTACHMENT_UPLOAD_ENDPOINT,
         fieldName: ATTACHMENT_TEXT_FIELD,
         inputId: "attachmentFileInput",
@@ -247,7 +305,6 @@ const IMAGE_UPLOADERS = {
     },
     completion: {
         title: "销假图片上传",
-        description: "这里上传的是“销假信息”卡片专用图片，会生成压缩预览图并独立写入销假图片字段。",
         endpoint: COMPLETION_ATTACHMENT_UPLOAD_ENDPOINT,
         fieldName: COMPLETION_ATTACHMENT_TEXT_FIELD,
         inputId: "completionAttachmentFileInput",
@@ -459,13 +516,14 @@ function refreshTrashListRegion() {
 }
 
 function createBlankRecord() {
+    const config = clone(state.template || {});
     return {
         id: "",
         url: "",
         customSubdomainEnabled: false,
         customSubdomain: "",
-        config: clone(state.template || {}),
-        expiresAtBeijing: createDefaultExpiry()
+        config,
+        expiresAtBeijing: createDefaultExpiry(config)
     };
 }
 
@@ -591,12 +649,10 @@ function renderImageUploader(kind) {
         <section class="group">
             <h3>${escapeHtml(uploader.title)}</h3>
             ${renderOptionalVisibilityToggle(optionalKey)}
-            <p>${escapeHtml(uploader.description)}</p>
             <div class="attachment-admin">
                 <div class="attachment-toolbar">
                     <input class="field attachment-file-input" id="${escapeHtml(uploader.inputId)}" type="file" accept="image/*" multiple${uploading ? " disabled" : ""}>
                 </div>
-                <div class="attachment-helper">支持常见图片格式，单张不超过 10MB。选择图片后会自动上传，上传完成后会自动加入当前图片列表，分享页显示压缩预览图。</div>
                 <div id="${escapeHtml(uploader.feedbackId)}"></div>
                 <div class="attachment-manager" id="${escapeHtml(uploader.managerId)}"></div>
             </div>
@@ -657,6 +713,10 @@ function renderField(field) {
         `;
     }
 
+    if (field.type === "theme-color") {
+        return renderThemeColorField(field, spanClass, labelHead);
+    }
+
     if (field.type === "checkbox") {
         return `
             <div class="label ${spanClass}">
@@ -667,6 +727,10 @@ function renderField(field) {
                 </span>
             </div>
         `;
+    }
+
+    if (field.type === "color") {
+        return renderColorField(field, spanClass, placeholder, labelHead);
     }
 
     return `
@@ -695,11 +759,50 @@ function renderAutoTimeField(field, spanClass, placeholder, labelHead) {
     `;
 }
 
+function renderThemeColorField(field, spanClass, labelHead) {
+    return `
+        <div class="label ${spanClass}">
+            ${labelHead}
+            <input type="hidden" name="${escapeHtml(field.path)}" data-theme-color-input="1">
+            <div class="theme-color-picker" data-theme-color-picker="${escapeHtml(field.path)}">
+                ${field.options.map((option) => renderThemeColorOption(option.value)).join("")}
+            </div>
+        </div>
+    `;
+}
+
+function renderThemeColorOption(value) {
+    const theme = getApprovalThemeColor(value);
+    return `
+        <button class="theme-color-option" type="button" data-theme-value="${escapeHtml(value)}" aria-label="${escapeHtml(theme.label)}" title="${escapeHtml(theme.label)}">
+            <span style="background:${escapeHtml(theme.color)}"></span>
+        </button>
+    `;
+}
+
+function renderColorField(field, spanClass, placeholder, labelHead) {
+    const defaultColor = normalizeHexColor(field.defaultColor || "");
+    const resetButton = defaultColor
+        ? `<button class="color-reset-btn" type="button" data-color-reset="${escapeHtml(field.path)}" data-color-value="${escapeHtml(defaultColor)}">恢复默认</button>`
+        : "";
+
+    return `
+        <div class="label ${spanClass}">
+            ${labelHead}
+            <div class="color-input-row">
+                <input class="field color-field" type="color" name="${escapeHtml(field.path)}"${placeholder}>
+                ${resetButton}
+            </div>
+        </div>
+    `;
+}
+
 function renderFieldLabelHead(field) {
     const optionalField = OPTIONAL_FIELD_BY_PATH.get(field.path);
     const actions = [
         optionalField ? renderOptionalVisibilityToggle(optionalField.key) : "",
-        field.labelToggle ? renderFieldLabelToggle(field.labelToggle) : ""
+        field.labelToggle ? renderFieldLabelToggle(field.labelToggle) : "",
+        renderTextColorPicker(field)
     ].filter(Boolean).join("");
 
     return `
@@ -707,6 +810,19 @@ function renderFieldLabelHead(field) {
             <span>${escapeHtml(field.label)}</span>
             ${actions ? `<span class="label-head-actions">${actions}</span>` : ""}
         </span>
+    `;
+}
+
+function renderTextColorPicker(field) {
+    if (!isTextColorModeEnabled() || !isTextColorField(field)) {
+        return "";
+    }
+
+    const color = getTextColorValueForField(field.path, state.currentRecord?.config || state.template || {});
+    return `
+        <label class="text-color-picker" title="前端文字颜色">
+            <input type="color" name="${TEXT_COLOR_FIELD_PREFIX}${escapeHtml(field.path)}" data-text-color-path="${escapeHtml(field.path)}" value="${escapeHtml(color)}" aria-label="${escapeHtml(field.label)}前端文字颜色">
+        </label>
     `;
 }
 
@@ -885,12 +1001,19 @@ function bindDashboardEvents() {
     }
     const optionalMode = document.querySelector('input[name="optionalVisibilityEnabled"]');
     if (optionalMode) {
-        optionalMode.addEventListener("change", handleOptionalVisibilityModeChange);
+        optionalMode.addEventListener("change", handleDisplayModeChange);
+    }
+    const textColorMode = document.querySelector(`input[name="${TEXT_COLOR_MODE_FIELD}"]`);
+    if (textColorMode) {
+        textColorMode.addEventListener("change", handleDisplayModeChange);
     }
     const customSubdomainEnabled = document.querySelector('input[name="customSubdomainEnabled"]');
     if (customSubdomainEnabled) {
         customSubdomainEnabled.addEventListener("change", syncCustomSubdomainFieldsState);
     }
+    bindColorResetButtons();
+    bindThemeColorPickers();
+    bindTextColorInputs();
     bindDestinationPicker();
     bindLinkedIdentityFields();
     bindTimeWheelPickers();
@@ -941,7 +1064,7 @@ function bindTrashListEvents(root = document.getElementById("trashListRegion")) 
     });
 }
 
-function handleOptionalVisibilityModeChange() {
+function handleDisplayModeChange() {
     const form = document.getElementById("editorForm");
     if (!form) {
         return;
@@ -957,6 +1080,80 @@ function handleOptionalVisibilityModeChange() {
         expiresAtBeijing: payload.expiresAtBeijing
     };
     renderDashboard();
+}
+
+function bindColorResetButtons(root = document) {
+    root.querySelectorAll("[data-color-reset]").forEach((button) => {
+        button.addEventListener("click", () => {
+            const fieldName = button.dataset.colorReset || "";
+            const color = normalizeHexColor(button.dataset.colorValue || "");
+            const input = document.getElementById("editorForm")?.elements.namedItem(fieldName);
+            if (!input || !color) {
+                return;
+            }
+
+            input.value = color;
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+    });
+}
+
+function bindThemeColorPickers(root = document) {
+    root.querySelectorAll("[data-theme-color-picker]").forEach((picker) => {
+        picker.querySelectorAll("[data-theme-value]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const form = document.getElementById("editorForm");
+                const fieldName = picker.dataset.themeColorPicker || "";
+                const input = form?.elements.namedItem(fieldName);
+                if (!input) {
+                    return;
+                }
+
+                input.value = button.dataset.themeValue || "";
+                syncThemeColorPicker(picker, input.value);
+                syncApprovalActionTextColorFromTheme(form, fieldName, input.value);
+            });
+        });
+    });
+}
+
+function bindTextColorInputs(root = document) {
+    root.querySelectorAll("[data-text-color-path]").forEach((input) => {
+        input.addEventListener("input", () => {
+            input.dataset.hasStoredTextColor = "1";
+        });
+    });
+}
+
+function syncThemeColorPickers(root = document) {
+    root.querySelectorAll("[data-theme-color-picker]").forEach((picker) => {
+        const input = root.elements?.namedItem(picker.dataset.themeColorPicker || "") ||
+            document.getElementById("editorForm")?.elements.namedItem(picker.dataset.themeColorPicker || "");
+        syncThemeColorPicker(picker, input?.value || "");
+    });
+}
+
+function syncThemeColorPicker(picker, value) {
+    picker.querySelectorAll("[data-theme-value]").forEach((button) => {
+        const selected = button.dataset.themeValue === value;
+        button.classList.toggle("is-selected", selected);
+        button.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+}
+
+function syncApprovalActionTextColorFromTheme(form, themePath, themeValue) {
+    const actionTextPath = themePath.replace(/\.theme$/, ".actionText");
+    if (actionTextPath === themePath) {
+        return;
+    }
+
+    const colorInput = form?.elements.namedItem(`${TEXT_COLOR_FIELD_PREFIX}${actionTextPath}`);
+    if (!colorInput || colorInput.dataset.hasStoredTextColor === "1") {
+        return;
+    }
+
+    colorInput.value = getCompletionApprovalActionTextColor(themeValue);
 }
 
 function syncCustomSubdomainFieldsState() {
@@ -1281,6 +1478,7 @@ function bindAutoVacationTimeFields() {
             const handler = () => {
                 syncLinkedStatusTimeFromLeaveField(form, fieldName);
                 syncVacationTimeOutputs(form);
+                syncDefaultExpiryFromLeaveTimes(form);
             };
             input.addEventListener("input", handler);
             input.addEventListener("change", handler);
@@ -1770,13 +1968,7 @@ function parseMonthDayMinute(value) {
 }
 
 function formatVacationDuration(startParts, endParts) {
-    const start = Date.UTC(2000, startParts.month - 1, startParts.day, startParts.hour, startParts.minute);
-    let end = Date.UTC(2000, endParts.month - 1, endParts.day, endParts.hour, endParts.minute);
-    if (end <= start) {
-        end = Date.UTC(2001, endParts.month - 1, endParts.day, endParts.hour, endParts.minute);
-    }
-
-    const totalMinutes = Math.max(0, Math.round((end - start) / 60000));
+    const totalMinutes = calculateVacationDurationMinutes(startParts, endParts);
     const days = Math.floor(totalMinutes / 1440);
     const hours = Math.floor((totalMinutes % 1440) / 60);
     const minutes = totalMinutes % 60;
@@ -1785,6 +1977,33 @@ function formatVacationDuration(startParts, endParts) {
         hours ? `${hours}小时` : "",
         minutes ? `${minutes}分钟` : ""
     ].filter(Boolean).join("") || "0分钟";
+}
+
+function calculateVacationDurationMinutes(startParts, endParts) {
+    const start = Date.UTC(2000, startParts.month - 1, startParts.day, startParts.hour, startParts.minute);
+    let end = Date.UTC(2000, endParts.month - 1, endParts.day, endParts.hour, endParts.minute);
+    if (end <= start) {
+        end = Date.UTC(2001, endParts.month - 1, endParts.day, endParts.hour, endParts.minute);
+    }
+
+    return Math.max(0, Math.round((end - start) / 60000));
+}
+
+function getVacationDurationWarningText(form) {
+    const startParts = parseMonthDayMinute(form.elements.namedItem("startTime")?.value || "");
+    const endParts = parseMonthDayMinute(form.elements.namedItem("endTime")?.value || "");
+    if (!startParts || !endParts) {
+        return "";
+    }
+
+    const totalMinutes = calculateVacationDurationMinutes(startParts, endParts);
+    if (totalMinutes < VACATION_DURATION_CONFIRM_THRESHOLD_MINUTES) {
+        return "";
+    }
+
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor((totalMinutes % 1440) / 60);
+    return `当前请假时间为${days}天${hours}小时，你确认吗`;
 }
 
 function createRange(start, end) {
@@ -2415,10 +2634,17 @@ async function handleSaveSubmit(event) {
         return;
     }
 
+    const form = event.currentTarget;
+    syncVacationTimeOutputs(form);
+    const durationWarningText = getVacationDurationWarningText(form);
+    if (durationWarningText && !window.confirm(durationWarningText)) {
+        return;
+    }
+
     state.message = "";
     state.error = "";
 
-    const payload = collectFormPayload(event.currentTarget);
+    const payload = collectFormPayload(form);
     state.currentRecord = {
         id: state.currentRecord?.id || "",
         url: state.currentRecord?.url || "",
@@ -2457,13 +2683,14 @@ async function handleSaveSubmit(event) {
 
 function normalizeRecord(item) {
     const customSubdomain = item?.customSubdomain || "";
+    const config = clone(item?.config || state.template || {});
     return {
         id: item?.id || "",
         url: item?.url || "",
         customSubdomainEnabled: Boolean(item?.customSubdomainEnabled || customSubdomain),
         customSubdomain,
-        config: clone(item?.config || state.template || {}),
-        expiresAtBeijing: item?.expiresAtBeijing || createDefaultExpiry()
+        config,
+        expiresAtBeijing: item?.expiresAtBeijing || createDefaultExpiry(config)
     };
 }
 
@@ -2703,7 +2930,7 @@ function fillEditorForm(record) {
                     ? config.completionInfo.attachments.join("\n")
                     : "";
             } else if (field.path === "expiresAtBeijing") {
-                value = record?.expiresAtBeijing ? record.expiresAtBeijing.replace(" ", "T") : createDefaultExpiry();
+                value = record?.expiresAtBeijing ? record.expiresAtBeijing.replace(" ", "T") : createDefaultExpiry(config);
             } else {
                 value = getValue(config, field.path);
             }
@@ -2723,6 +2950,18 @@ function fillEditorForm(record) {
         });
     });
     fillOptionalVisibilityFields(form, config);
+    fillTextColorFields(form, config);
+    syncThemeColorPickers(form);
+    const expiryElement = form.elements.namedItem("expiresAtBeijing");
+    if (expiryElement) {
+        const defaultExpiry = createDefaultExpiry(config);
+        const currentExpiry = String(expiryElement.value || "").trim().replace("T", " ");
+        if (!record?.id && currentExpiry === defaultExpiry) {
+            expiryElement.dataset.autoDefaultExpiry = defaultExpiry;
+        } else {
+            delete expiryElement.dataset.autoDefaultExpiry;
+        }
+    }
     syncCustomSubdomainFieldsState();
 }
 
@@ -2765,6 +3004,7 @@ function collectFormPayload(form) {
         });
     });
     config.visibleFields = collectOptionalVisibilityFields(form, config);
+    config.textColors = collectTextColorFields(form, config);
 
     const customSubdomainEnabled = Boolean(form.elements.namedItem("customSubdomainEnabled")?.checked);
     const customSubdomain = String(form.elements.namedItem("customSubdomain")?.value || "").trim();
@@ -2826,6 +3066,37 @@ function collectOptionalVisibilityFields(form, config) {
     return visibleFields;
 }
 
+function fillTextColorFields(form, config) {
+    if (!form) {
+        return;
+    }
+
+    form.querySelectorAll("[data-text-color-path]").forEach((element) => {
+        const path = element.dataset.textColorPath || "";
+        element.dataset.hasStoredTextColor = config?.textColors?.[path] ? "1" : "0";
+        const color = getTextColorValueForField(path, config);
+        if (color) {
+            element.value = color;
+        }
+    });
+}
+
+function collectTextColorFields(form, config) {
+    const textColors = {
+        ...(config?.textColors && typeof config.textColors === "object" ? config.textColors : {})
+    };
+
+    form.querySelectorAll("[data-text-color-path]").forEach((element) => {
+        const path = element.dataset.textColorPath || "";
+        const color = normalizeHexColor(element.value);
+        if (path && color) {
+            textColors[path] = color;
+        }
+    });
+
+    return textColors;
+}
+
 function getOptionalVisibilityKeys() {
     return [
         ...OPTIONAL_DISPLAY_FIELDS.map((item) => item.key),
@@ -2836,6 +3107,46 @@ function getOptionalVisibilityKeys() {
 
 function isOptionalVisibilityEnabled() {
     return Boolean(state.currentRecord?.config?.optionalVisibilityEnabled);
+}
+
+function isTextColorModeEnabled() {
+    return Boolean(state.currentRecord?.config?.[TEXT_COLOR_MODE_FIELD]);
+}
+
+function isTextColorField(field) {
+    return Boolean(TEXT_COLOR_FIELD_DEFAULTS[field?.path]);
+}
+
+function getTextColorValueForField(path, config) {
+    return normalizeHexColor(config?.textColors?.[path]) || getDefaultTextColorForField(path, config);
+}
+
+function getDefaultTextColorForField(path, config) {
+    if (path === "cancelRuleText") {
+        return normalizeHexColor(config?.cancelRuleColor) || DEFAULT_CANCEL_RULE_COLOR;
+    }
+
+    if (path === "needLeaveSchool" && config?.needLeaveSchoolUseCancelRuleColor) {
+        return normalizeHexColor(config?.cancelRuleColor) || DEFAULT_CANCEL_RULE_COLOR;
+    }
+
+    const approvalActionMatch =
+        /^completionInfo\.approvalFlow\.(firstStep|secondStep)\.actionText$/.exec(path);
+    if (approvalActionMatch) {
+        return getCompletionApprovalActionTextColor(
+            getValue(config, `completionInfo.approvalFlow.${approvalActionMatch[1]}.theme`)
+        );
+    }
+
+    return TEXT_COLOR_FIELD_DEFAULTS[path] || DEFAULT_TEXT_COLOR;
+}
+
+function getCompletionApprovalActionTextColor(theme) {
+    return getApprovalThemeColor(theme).textColor;
+}
+
+function getApprovalThemeColor(theme) {
+    return APPROVAL_THEME_COLORS[String(theme || "").trim().toLowerCase()] || APPROVAL_THEME_COLORS.primary;
 }
 
 function isOptionalChildVisible(config, key) {
@@ -2954,8 +3265,78 @@ function clone(value) {
     return JSON.parse(JSON.stringify(value));
 }
 
-function createDefaultExpiry() {
-    const date = new Date(Date.now() + 8 * 60 * 60 * 1000 + 24 * 60 * 60 * 1000);
+function createDefaultExpiry(config = state.currentRecord?.config || state.template || {}) {
+    return createExpiryFromEndTime(config) || formatBeijingDateTimeForInput(Date.now() + 24 * 60 * 60 * 1000);
+}
+
+function createExpiryFromEndTime(config) {
+    const endParts = parseTimeWheelValue(config?.endTime || "");
+    if (!endParts) {
+        return "";
+    }
+
+    const year = inferExpiryYearFromEndTime(config, endParts);
+    const endAt = Date.UTC(year, endParts.month - 1, endParts.day, endParts.hour - 8, endParts.minute);
+    if (!Number.isFinite(endAt)) {
+        return "";
+    }
+
+    return formatBeijingDateTimeForInput(endAt + 24 * 60 * 60 * 1000);
+}
+
+function inferExpiryYearFromEndTime(config, endParts) {
+    if (endParts.year && endParts.year !== 2000) {
+        return endParts.year;
+    }
+
+    const completedParts = parseTimeWheelValue(
+        config?.completedSwitchAtBeijing || config?.statusSwitchAtBeijing || ""
+    );
+    if (completedParts?.year && completedParts.year !== 2000) {
+        return completedParts.year;
+    }
+
+    const startParts = parseTimeWheelValue(config?.startTime || "");
+    const defaultYear = getDefaultTimeWheelParts("year-minute").year;
+    if (startParts && getMonthDayMinuteKey(endParts) < getMonthDayMinuteKey(startParts)) {
+        return defaultYear + 1;
+    }
+
+    return defaultYear;
+}
+
+function syncDefaultExpiryFromLeaveTimes(form) {
+    const expiryInput = form.elements.namedItem("expiresAtBeijing");
+    if (!expiryInput) {
+        return;
+    }
+
+    const previousConfig = state.currentRecord?.config || state.template || {};
+    const currentValue = String(expiryInput.value || "").trim().replace("T", " ");
+    const previousDefault = createDefaultExpiry(previousConfig);
+    const autoDefault = expiryInput.dataset.autoDefaultExpiry || previousDefault;
+    if (currentValue && currentValue !== autoDefault && currentValue !== previousDefault) {
+        return;
+    }
+
+    const nextConfig = {
+        ...previousConfig,
+        startTime: String(form.elements.namedItem("startTime")?.value || "").trim(),
+        endTime: String(form.elements.namedItem("endTime")?.value || "").trim()
+    };
+    const nextDefault = createDefaultExpiry(nextConfig);
+    if (nextDefault && expiryInput.value !== nextDefault) {
+        expiryInput.value = nextDefault;
+        expiryInput.dataset.autoDefaultExpiry = nextDefault;
+    }
+}
+
+function getMonthDayMinuteKey(parts) {
+    return (parts.month * 1000000) + (parts.day * 10000) + (parts.hour * 100) + parts.minute;
+}
+
+function formatBeijingDateTimeForInput(timestamp) {
+    const date = new Date(timestamp + 8 * 60 * 60 * 1000);
     return [
         date.getUTCFullYear(),
         String(date.getUTCMonth() + 1).padStart(2, "0"),
@@ -2964,6 +3345,11 @@ function createDefaultExpiry() {
         String(date.getUTCHours()).padStart(2, "0"),
         String(date.getUTCMinutes()).padStart(2, "0")
     ].join(":");
+}
+
+function normalizeHexColor(value) {
+    const color = String(value || "").trim();
+    return /^#[0-9a-f]{6}$/i.test(color) ? color.toLowerCase() : "";
 }
 
 function startClock() {
